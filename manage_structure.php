@@ -1,23 +1,36 @@
 <?php
 include 'db.php';
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') { header("Location: dashboard.php"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 
-if (isset($_POST['add_dept'])) {
+$user_role = $_SESSION['role'];
+$user_dept_id = intval($_SESSION['dept_id']);
+
+if (isset($_POST['add_dept']) && $user_role === 'admin') {
     $name = $conn->real_escape_string($_POST['dept_name']);
     if(!empty($name)) $conn->query("INSERT INTO departments (name) VALUES ('$name')");
 }
-if (isset($_GET['del_dept'])) {
+if (isset($_GET['del_dept']) && $user_role === 'admin') {
     $id = intval($_GET['del_dept']);
     $conn->query("DELETE FROM departments WHERE id = $id");
 }
 if (isset($_POST['add_topic'])) {
-    $dept_id = intval($_POST['dept_id']);
+    if ($user_role === 'admin') {
+        $dept_id = intval($_POST['dept_id']);
+    } else {
+        $dept_id = $user_dept_id;
+    }
     $title = $conn->real_escape_string($_POST['topic_title']);
-    if(!empty($title) && $dept_id > 0) $conn->query("INSERT INTO topics (department_id, title) VALUES ($dept_id, '$title')");
+    if(!empty($title) && $dept_id > 0) {
+        $conn->query("INSERT INTO topics (department_id, title) VALUES ($dept_id, '$title')");
+    }
 }
 if (isset($_GET['del_topic'])) {
     $id = intval($_GET['del_topic']);
-    $conn->query("DELETE FROM topics WHERE id = $id");
+    if ($user_role === 'admin') {
+        $conn->query("DELETE FROM topics WHERE id = $id");
+    } else {
+        $conn->query("DELETE FROM topics WHERE id = $id AND department_id = $user_dept_id");
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -25,7 +38,7 @@ if (isset($_GET['del_topic'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ຈັດການໂຄງສ້າງພະແນກ</title>
+    <title>ຈັດການໂຄງສ້າງພະແນກ & ຫົວຂໍ້</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Noto Sans Lao', sans-serif; }
@@ -35,59 +48,72 @@ if (isset($_GET['del_topic'])) {
         h3 { margin-top: 0; color: #0f172a; border-bottom: 1px solid #edf2f7; padding-bottom: 12px; font-size: 18px; }
         .form-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         @media (min-width: 576px) { .form-group { flex-direction: row; } }
-        input, select, button { padding: 11px 15px; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; border-radius: 6px; font-size: 14px; }
-        input, select { flex: 1; }
+        input, select, button { padding: 11px 15px; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; border-radius: 6px; font-size: 14px; width: 100%; }
+        @media (min-width: 576px) { input, select { flex: 1; } button { width: auto; } }
         input:focus, select:focus { border-color: #3182ce; outline: none; }
         button { background: #3182ce; color: #ffffff; font-weight: bold; cursor: pointer; border: none; }
         button:hover { background: #2b6cb0; }
         ul { list-style: none; padding: 0; margin: 0; }
-        li { background: #f8fafc; padding: 12px 15px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; font-size: 14px; }
+        li { background: #f8fafc; padding: 12px 15px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; font-size: 14px; gap: 10px; }
         .btn-del { color: #e53e3e; text-decoration: none; font-weight: bold; padding: 4px 8px; border-radius: 4px; }
-        .btn-del:hover { background: #fff5f5; }
         .btn-back { color: #64748b; text-decoration: none; display: inline-block; margin-bottom: 15px; font-weight: bold; font-size: 14px; }
-        .btn-back:hover { color: #3182ce; }
+        .badge-dept { color: #3182ce; font-weight: bold; background: #ebf8ff; padding: 2px 6px; border-radius: 4px; font-size: 12px; border: 1px solid #bee3f8; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="dashboard.php" class="btn-back">← ກັບໄປໜ້າຫຼັກ Dashboard</a>
         
+        <?php if ($user_role === 'admin'): ?>
         <div class="section">
             <h3>1. ຈັດການພະແນກ (ເພີ່ມ/ລົບ)</h3>
             <form method="POST" class="form-group">
-                <input type="text" name="dept_name" placeholder="ປ້ອນຊື່ພະແນກໃໝ່..." required>
+                <input type="text" name="dept_name" placeholder="...ປ້ອນຊື່ພະແນກໃໝ່" required>
                 <button type="submit" name="add_dept">ເພີ່ມພະແນກ</button>
             </form>
             <ul>
                 <?php
                 $depts = $conn->query("SELECT * FROM departments");
                 while($d = $depts->fetch_assoc()) {
-                    echo "<li><span>" . htmlspecialchars($d['name']) . "</span> <a href='manage_structure.php?del_dept={$d['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບພະແນກນີ້ ແລະ ຂໍ້ມູນທີ່ກ່ຽວຂ້ອງທັງໝົດແມ່ນບໍ່?\")'>ລົບ</a></li>";
+                    echo "<li><span>" . htmlspecialchars($d['name']) . "</span> <a href='manage_structure.php?del_dept={$d['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບພະແນກນີ້?\")'>ລົບ</a></li>";
                 }
                 ?>
             </ul>
         </div>
+        <?php endif; ?>
 
         <div class="section">
-            <h3>2. ຈັດการຫົວຂໍ້/ກິດຈະກຳ ແຕ່ລະພະແนກ</h3>
+            <h3>2. ຈັດການ ແລະ ເພີ່ມຫົວຂໍ້/ກິດຈະກຳ (Topic)</h3>
             <form method="POST" class="form-group">
-                <select name="dept_id" required>
-                    <option value="">-- ເລືອກພະແນກ --</option>
-                    <?php
-                    $depts_select = $conn->query("SELECT * FROM departments");
-                    while($ds = $depts_select->fetch_assoc()) {
-                        echo "<option value='{$ds['id']}'>" . htmlspecialchars($ds['name']) . "</option>";
-                    }
+                <?php if ($user_role === 'admin'): ?>
+                    <select name="dept_id" required>
+                        <option value="">-- ເລືอกພະແນກ --</option>
+                        <?php
+                        $depts_select = $conn->query("SELECT * FROM departments");
+                        while($ds = $depts_select->fetch_assoc()) {
+                            echo "<option value='{$ds['id']}'>" . htmlspecialchars($ds['name']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                <?php else: ?>
+                    <?php 
+                    $my_dept = $conn->query("SELECT name FROM departments WHERE id = $user_dept_id")->fetch_assoc();
                     ?>
-                </select>
-                <input type="text" name="topic_title" placeholder="ຕົວຢ່າງ: ການເກັບຜົນຜະລິດ, ການທ່ອງທ່ຽວ..." required>
-                <button type="submit" name="add_topic">ເພີ່ມຫົວຂໍ້</button>
+                    <input type="text" value="ພະແນກຂອງທ່ານ: <?php echo htmlspecialchars($my_dept['name']); ?>" disabled style="background:#edf2f7; font-weight:bold; color:#4a5568;">
+                <?php endif; ?>
+
+                <input type="text" name="topic_title" placeholder="ປ້ອນຊື່ຫົວຂໍ້ໃໝ່..." required>
+                <button type="submit" name="add_topic">➕ ເພີ່ມຫົວຂໍ້</button>
             </form>
             <ul>
                 <?php
-                $topics = $conn->query("SELECT t.*, d.name as dname FROM topics t JOIN departments d ON t.department_id = d.id ORDER BY t.department_id DESC");
+                if ($user_role === 'admin') {
+                    $topics = $conn->query("SELECT t.*, d.name as dname FROM topics t JOIN departments d ON t.department_id = d.id ORDER BY t.department_id DESC");
+                } else {
+                    $topics = $conn->query("SELECT t.*, d.name as dname FROM topics t JOIN departments d ON t.department_id = d.id WHERE t.department_id = $user_dept_id ORDER BY t.id DESC");
+                }
                 while($t = $topics->fetch_assoc()) {
-                    echo "<li><span><small style='color:#64748b; font-weight:bold;'>[" . htmlspecialchars($t['dname']) . "]</small> " . htmlspecialchars($t['title']) . "</span> <a href='manage_structure.php?del_topic={$t['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບຫົວຂໍ້ນີ້ບໍ່?\")'>ລົບ</a></li>";
+                    echo "<li><span><span class='badge-dept'>[" . htmlspecialchars($t['dname']) . "]</span> " . htmlspecialchars($t['title']) . "</span> <a href='manage_structure.php?del_topic={$t['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບຫົວຂໍ້ນີ້ບໍ່?\")'>ລົບ</a></li>";
                 }
                 ?>
             </ul>
