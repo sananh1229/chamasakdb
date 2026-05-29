@@ -1,0 +1,354 @@
+/* ==========================================================================
+   1. Global Styles & Typography (Noto Sans Lao)
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    font-family: 'Noto Sans Lao', sans-serif;
+}
+
+body {
+    background-color: #f8fafc;
+    color: #334155;
+    margin: 0;
+    padding: 15px;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* ==========================================================================
+   2. Header Area
+   ========================================================================== */
+header {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+    header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+header h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 22px;
+}
+
+/* ==========================================================================
+   3. Buttons & Navigation Links (Fully Responsive for Touch)
+   ========================================================================== */
+select, input, .btn {
+    padding: 10px 15px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: center;
+}
+
+@media (min-width: 576px) {
+    select, input, .btn {
+        width: auto;
+        text-align: left;
+    }
+}
+
+select:focus, input:focus {
+    border-color: #3182ce;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+.btn-main {
+    background: #3182ce;
+    color: #fff;
+    font-weight: bold;
+    border: none;
+}
+
+.btn-main:hover {
+    background: #2b6cb0;
+}
+
+.btn-success {
+    background: #48bb78;
+    color: #fff;
+    font-weight: bold;
+    border: none;
+}
+
+.btn-success:hover {
+    background: #38a169;
+}
+
+.btn-edit {
+    background: #ecc94b;
+    color: #1a202c;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-right: 5px;
+    display: inline-block;
+    width: auto;
+}
+
+.btn-edit:hover {
+    background: #d69e2e;
+}
+
+.btn-del {
+    background: #f56565;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    width: auto;
+}
+
+.btn-del:hover {
+    background: #e53e3e;
+}
+
+.btn-back {
+    color: #64748b;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 15px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.btn-back:hover {
+    color: #3182ce;
+}
+
+/* ==========================================================================
+   4. Filter Box Area
+   ========================================================================== */
+.filter-box {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-form-wrap {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+/* ==========================================================================
+   5. Responsive Tables
+   ========================================================================== */
+.table-responsive {
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-top: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    min-width: 800px;
+}
+
+th, td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 14px;
+}
+
+th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+}
+
+tr:hover {
+    background: #f8fafc;
+}
+
+.last-row {
+    background: #f1f5f9;
+    font-weight: bold;
+    color: #0f172a;
+    border-top: 2px solid #cbd5e1;
+}
+
+h3 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: #0f172a;
+    border-left: 4px solid #3182ce;
+    padding-left: 10px;
+    font-size: 18px;
+}
+
+/* ==========================================================================
+   6. Form Containers (Login, Add User, Insert, Edit Content)
+   ========================================================================== */
+.form-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 25px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 480px;
+    margin: 30px auto;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.form-container h2 {
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: 12px;
+    margin-top: 0;
+    color: #1a202c;
+    font-size: 20px;
+}
+
+.form-container label {
+    display: block;
+    margin: 15px 0 5px;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-container input, .form-container select, .form-container button {
+    width: 100%;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #333;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.form-container button {
+    background: #3182ce;
+    color: #ffffff;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    margin-top: 25px;
+    transition: 0.2s;
+}
+
+.form-container button:hover {
+    background: #2b6cb0;
+}
+
+/* ==========================================================================
+   7. Structures & Topics Manage Sections
+   ========================================================================== */
+.section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.section h3 {
+    margin-top: 0;
+    color: #0f172a;
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: 12px;
+    font-size: 18px;
+    border-left: none;
+    padding-left: 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+@media (min-width: 576px) {
+    .form-group {
+        flex-direction: row;
+    }
+    .form-group input, .form-group select {
+        flex: 1;
+    }
+    .form-group button {
+        width: auto;
+    }
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    background: #f8fafc;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+    gap: 10px;
+}
+
+.badge-dept {
+    color: #3182ce;
+    font-weight: bold;
+    background: #ebf8ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid #bee3f8;
+}
+
+/* Message Status */
+.msg {
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+.success { background: #f0fff4; border: 1px solid #c6f6d5; color: #38a169; }
+.error { background: #fff5f5; border: 1px solid #fed7d7; color: #e53e3e; }

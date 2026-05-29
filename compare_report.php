@@ -79,7 +79,7 @@ function getTopicMonthlyData($tid, $months, $conn) {
 </head>
 <body>
     <div class="container">
-        <h2>📊 ລາຍງານສະຫຼຸບສົມທຽບຂໍ້ມູນ ເປີເຊັນເພີ່ມຂຶ້ນ/ຫຼຸດລົງ ແຍກຕາມແຕ່ລະຫົວຂໍ້ (Topic)</h2>
+        <h2>📊 ລາຍງານສະຫຼຸບສົມທຽບຂໍ້ມູນ ເປີເຊັນເພີ່ມຂຶ້ນ/ຫຼຸດລົງ ແຍກຕາມແຕ່ລະຫົວຂໍ້</h2>
 
         <div class="filter-box">
             <form method="GET" class="filter-form">

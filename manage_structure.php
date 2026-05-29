@@ -1,34 +1,47 @@
 <?php
 include 'db.php';
-if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
+
+// ເຊັກແຄ່ວ່າໄດ້ເຂົ້າສູ່ລະບົບແລ້ວບໍ່ (ທັງ Admin ແລະ User ສາມາດເຂົ້າໜ້ານີ້ໄດ້)
+if (!isset($_SESSION['user_id'])) { 
+    header("Location: login.php"); 
+    exit(); 
+}
 
 $user_role = $_SESSION['role'];
 $user_dept_id = intval($_SESSION['dept_id']);
 
+// 1. ຈັດການເພີ່ມ ພະແນກ (ອະນຸຍາດສະເພາະ Admin ເທົ່ານັ້ນ)
 if (isset($_POST['add_dept']) && $user_role === 'admin') {
     $name = $conn->real_escape_string($_POST['dept_name']);
     if(!empty($name)) $conn->query("INSERT INTO departments (name) VALUES ('$name')");
 }
+
+// 2. ຈັດການລົບ ພະແນກ (ອະນຸຍາດສະເພາະ Admin ເທົ່ານັ້ນ)
 if (isset($_GET['del_dept']) && $user_role === 'admin') {
     $id = intval($_GET['del_dept']);
     $conn->query("DELETE FROM departments WHERE id = $id");
 }
+
+// 3. 🌟 ແກ້ໄຂແຖວນີ້ແລ້ວ: ຈັດການເພີ່ມ ຫົວຂໍ້/ກິດຈະກຳ (Topic) -> ເປີດໃຫ້ທັງ Admin ແລະ User ເພີ່ມເອງໄດ້
 if (isset($_POST['add_topic'])) {
     if ($user_role === 'admin') {
-        $dept_id = intval($_POST['dept_id']);
+        $dept_id = intval($_POST['dept_id']); // Admin ເລືອກພະແນກໃດກໍໄດ້
     } else {
-        $dept_id = $user_dept_id;
+        $dept_id = $user_dept_id; // ຖ້າເປັນ User ລະບົບຈະລັອກໃຫ້ເພີ່ມສະເພາະພະແນກຂອງຕົນເອງ
     }
     $title = $conn->real_escape_string($_POST['topic_title']);
     if(!empty($title) && $dept_id > 0) {
         $conn->query("INSERT INTO topics (department_id, title) VALUES ($dept_id, '$title')");
     }
 }
+
+// 4. ຈັດການລົບ ຫົວຂໍ້ (Topic)
 if (isset($_GET['del_topic'])) {
     $id = intval($_GET['del_topic']);
     if ($user_role === 'admin') {
         $conn->query("DELETE FROM topics WHERE id = $id");
     } else {
+        // ຖ້າເປັນ User ຈະລົບໄດ້ສະເພາະຫົວຂໍ້ທີ່ຢູ່ໃນພະແນກຂອງຕົນເອງເທົ່ານັ້ນ
         $conn->query("DELETE FROM topics WHERE id = $id AND department_id = $user_dept_id");
     }
 }
@@ -40,25 +53,7 @@ if (isset($_GET['del_topic'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ຈັດການໂຄງສ້າງພະແນກ & ຫົວຂໍ້</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; font-family: 'Noto Sans Lao', sans-serif; }
-        body { background-color: #f8fafc; color: #334155; padding: 15px; margin: 0; }
-        .container { max-width: 900px; margin: auto; }
-        .section { background: #ffffff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        h3 { margin-top: 0; color: #0f172a; border-bottom: 1px solid #edf2f7; padding-bottom: 12px; font-size: 18px; }
-        .form-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        @media (min-width: 576px) { .form-group { flex-direction: row; } }
-        input, select, button { padding: 11px 15px; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; border-radius: 6px; font-size: 14px; width: 100%; }
-        @media (min-width: 576px) { input, select { flex: 1; } button { width: auto; } }
-        input:focus, select:focus { border-color: #3182ce; outline: none; }
-        button { background: #3182ce; color: #ffffff; font-weight: bold; cursor: pointer; border: none; }
-        button:hover { background: #2b6cb0; }
-        ul { list-style: none; padding: 0; margin: 0; }
-        li { background: #f8fafc; padding: 12px 15px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; font-size: 14px; gap: 10px; }
-        .btn-del { color: #e53e3e; text-decoration: none; font-weight: bold; padding: 4px 8px; border-radius: 4px; }
-        .btn-back { color: #64748b; text-decoration: none; display: inline-block; margin-bottom: 15px; font-weight: bold; font-size: 14px; }
-        .badge-dept { color: #3182ce; font-weight: bold; background: #ebf8ff; padding: 2px 6px; border-radius: 4px; font-size: 12px; border: 1px solid #bee3f8; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -66,16 +61,16 @@ if (isset($_GET['del_topic'])) {
         
         <?php if ($user_role === 'admin'): ?>
         <div class="section">
-            <h3>1. ຈັດການພະແນກ (ເພີ່ມ/ລົບ)</h3>
+            <h3>1. ຈັດການພະແนກ (ເພີ່ມ/ລົບ) <span style="color:#3182ce; font-size:12px;">[ສິດທິ Admin]</span></h3>
             <form method="POST" class="form-group">
-                <input type="text" name="dept_name" placeholder="...ປ້ອນຊື່ພະແນກໃໝ່" required>
+                <input type="text" name="dept_name" placeholder="ປ້ອນຊື່ພະແນກໃໝ່..." required>
                 <button type="submit" name="add_dept">ເພີ່ມພະແນກ</button>
             </form>
             <ul>
                 <?php
                 $depts = $conn->query("SELECT * FROM departments");
                 while($d = $depts->fetch_assoc()) {
-                    echo "<li><span>" . htmlspecialchars($d['name']) . "</span> <a href='manage_structure.php?del_dept={$d['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບພະແນກນີ້?\")'>ລົບ</a></li>";
+                    echo "<li><span>" . htmlspecialchars($d['name']) . "</span> <a href='manage_structure.php?del_dept={$d['id']}' class='btn-del' onclick='return confirm(\"ต้องการລົບພະແນກນີ້ ແລະ ຂໍ້ມູນທັງໝົດແມ່ນບໍ່?\")'>ລົບ</a></li>";
                 }
                 ?>
             </ul>
@@ -85,9 +80,10 @@ if (isset($_GET['del_topic'])) {
         <div class="section">
             <h3>2. ຈັດການ ແລະ ເພີ່ມຫົວຂໍ້/ກິດຈະກຳ (Topic)</h3>
             <form method="POST" class="form-group">
+                
                 <?php if ($user_role === 'admin'): ?>
                     <select name="dept_id" required>
-                        <option value="">-- ເລືอกພະແນກ --</option>
+                        <option value="">-- ເລືອກພະແນກ --</option>
                         <?php
                         $depts_select = $conn->query("SELECT * FROM departments");
                         while($ds = $depts_select->fetch_assoc()) {
@@ -102,19 +98,26 @@ if (isset($_GET['del_topic'])) {
                     <input type="text" value="ພະແນກຂອງທ່ານ: <?php echo htmlspecialchars($my_dept['name']); ?>" disabled style="background:#edf2f7; font-weight:bold; color:#4a5568;">
                 <?php endif; ?>
 
-                <input type="text" name="topic_title" placeholder="ປ້ອນຊື່ຫົວຂໍ້ໃໝ່..." required>
+                <input type="text" name="topic_title" placeholder="...ປ້ອນຊື່ຫົວຂໍ້ໃໝ່" required>
                 <button type="submit" name="add_topic">➕ ເພີ່ມຫົວຂໍ້</button>
             </form>
+            
             <ul>
                 <?php
+                // ດຶງລາຍການຂຶ້ນມາສະແດງຜົນຕາມເງື່ອນໄຂສິດທິ
                 if ($user_role === 'admin') {
                     $topics = $conn->query("SELECT t.*, d.name as dname FROM topics t JOIN departments d ON t.department_id = d.id ORDER BY t.department_id DESC");
                 } else {
                     $topics = $conn->query("SELECT t.*, d.name as dname FROM topics t JOIN departments d ON t.department_id = d.id WHERE t.department_id = $user_dept_id ORDER BY t.id DESC");
                 }
-                while($t = $topics->fetch_assoc()) {
-                    echo "<li><span><span class='badge-dept'>[" . htmlspecialchars($t['dname']) . "]</span> " . htmlspecialchars($t['title']) . "</span> <a href='manage_structure.php?del_topic={$t['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບຫົວຂໍ້ນີ້ບໍ່?\")'>ລົບ</a></li>";
-                }
+                
+                if($topics && $topics->num_rows > 0):
+                    while($t = $topics->fetch_assoc()) {
+                        echo "<li><span><span class='badge-dept'>[" . htmlspecialchars($t['dname']) . "]</span> " . htmlspecialchars($t['title']) . "</span> <a href='manage_structure.php?del_topic={$t['id']}' class='btn-del' onclick='return confirm(\"ຕ້ອງການລົບຫົວຂໍ້ນີ້ບໍ່?\")'>ລົບ</a></li>";
+                    }
+                else:
+                    echo "<p style='text-align:center; color:#64748b; font-size:14px; padding:10px;'>ບໍ່ມີຫົວຂໍ້ໃນລະບົບ</p>";
+                endif;
                 ?>
             </ul>
         </div>
