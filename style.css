@@ -1,150 +1,160 @@
 /* ==========================================================================
-   1. Global Styles & Typography (Noto Sans Lao)
+   1. Global Styles & Layout Layout (Sidebar + Main Content)
    ========================================================================== */
 * {
     box-sizing: border-box;
     font-family: 'Noto Sans Lao', sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 body {
     background-color: #f8fafc;
     color: #334155;
-    margin: 0;
-    padding: 15px;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.container {
-    max-width: 1200px;
-    margin: auto;
+/* ແບ່ງໜ້າຈໍເປັນເມນູທາງຂ້າງ ແລະ ເນື້ອຫາຫຼັກ */
+.wrapper {
+    display: flex;
+    flex: 1;
+    position: relative;
 }
 
 /* ==========================================================================
-   2. Header Area
+   2. Sidebar Styles (ເມນູທາງຂ້າງ)
    ========================================================================== */
-header {
+.sidebar {
+    width: 260px;
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
+    padding: 20px 15px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    transition: all 0.3s ease;
 }
 
-@media (min-width: 768px) {
-    header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
+.sidebar-brand {
+    font-size: 18px;
+    font-weight: bold;
+    color: #0f172a;
+    margin-bottom: 30px;
+    padding-left: 10px;
+    border-left: 4px solid #3182ce;
+}
+
+.sidebar-menu {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-item a, .sidebar-item button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    color: #475569;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar-item a:hover, .sidebar-item button:hover {
+    background-color: #f1f5f9;
+    color: #3182ce;
+}
+
+.sidebar-item.active a {
+    background-color: #ebf8ff;
+    color: #3182ce;
+    font-weight: bold;
+}
+
+.sidebar-user {
+    margin-top: auto;
+    padding: 15px 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ==========================================================================
+   3. Main Content Area
+   ========================================================================== */
+.main-content {
+    flex: 1;
+    margin-left: 260px; /* ຍ້າຍເນື້ອຫາຫຼັກຫຼົບເມນູທາງຂ້າງ */
+    padding: 30px;
+    transition: all 0.3s ease;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 header h2 {
-    margin: 0;
     color: #0f172a;
     font-size: 22px;
 }
 
 /* ==========================================================================
-   3. Buttons & Navigation Links (Fully Responsive for Touch)
+   4. Mobile Responsive & Hamburger Menu (ສຳລັບໜ້າຈໍໂທລະສັບ)
    ========================================================================== */
-select, input, .btn {
-    padding: 10px 15px;
+.menu-toggle {
+    display: none; /* ຊ່ອນປຸ່ມເປີດເມນູໃນຈໍຄອມ */
     background: #ffffff;
     border: 1px solid #cbd5e1;
-    color: #334155;
+    padding: 10px;
     border-radius: 6px;
-    text-decoration: none;
     cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-    width: 100%;
-    text-align: center;
+    font-size: 16px;
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 200;
 }
 
-@media (min-width: 576px) {
-    select, input, .btn {
-        width: auto;
-        text-align: left;
+@media (max-width: 991px) {
+    .sidebar {
+        left: -260px; /* ຊ່ອນເມນູທາງຂ້າງອອກໄປນອກຈໍໃນມືຖື */
+    }
+    .sidebar.open {
+        left: 0; /* ດຶງເມນູອອກມາເມື່ອກົດປຸ່ມ */
+        box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+    }
+    .main-content {
+        margin-left: 0; /* ໃຫ້ເນື້ອຫາສະແດງເຕັມຈໍໃນມືຖື */
+        padding: 20px 15px;
+        margin-top: 40px;
+    }
+    .menu-toggle {
+        display: block; /* ສະແດງປຸ່ມ Hamburger ເທິງມືຖື */
     }
 }
 
-select:focus, input:focus {
-    border-color: #3182ce;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
-}
-
-.btn-main {
-    background: #3182ce;
-    color: #fff;
-    font-weight: bold;
-    border: none;
-}
-
-.btn-main:hover {
-    background: #2b6cb0;
-}
-
-.btn-success {
-    background: #48bb78;
-    color: #fff;
-    font-weight: bold;
-    border: none;
-}
-
-.btn-success:hover {
-    background: #38a169;
-}
-
-.btn-edit {
-    background: #ecc94b;
-    color: #1a202c;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: bold;
-    border-radius: 4px;
-    text-decoration: none;
-    margin-right: 5px;
-    display: inline-block;
-    width: auto;
-}
-
-.btn-edit:hover {
-    background: #d69e2e;
-}
-
-.btn-del {
-    background: #f56565;
-    color: #fff;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: bold;
-    border-radius: 4px;
-    text-decoration: none;
-    display: inline-block;
-    width: auto;
-}
-
-.btn-del:hover {
-    background: #e53e3e;
-}
-
-.btn-back {
-    color: #64748b;
-    text-decoration: none;
-    display: inline-block;
-    margin-bottom: 15px;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.btn-back:hover {
-    color: #3182ce;
-}
-
 /* ==========================================================================
-   4. Filter Box Area
+   5. Components (Filter Box, Tables & Buttons)
    ========================================================================== */
 .filter-box {
     background: #ffffff;
@@ -152,30 +162,37 @@ select:focus, input:focus {
     border-radius: 8px;
     margin-bottom: 20px;
     border: 1px solid #e2e8f0;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
 }
 
 .filter-form-wrap {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    width: 100%;
+    align-items: center;
 }
 
-/* ==========================================================================
-   5. Responsive Tables
-   ========================================================================== */
+select, input, .btn-search {
+    padding: 10px 15px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-search {
+    background-color: #cbd5e1;
+    font-weight: bold;
+    border: none;
+}
+
 .table-responsive {
     overflow-x: auto;
     background: #ffffff;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     margin-top: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -197,9 +214,7 @@ th {
     font-weight: 700;
 }
 
-tr:hover {
-    background: #f8fafc;
-}
+tr:hover { background: #f8fafc; }
 
 .last-row {
     background: #f1f5f9;
@@ -208,147 +223,33 @@ tr:hover {
     border-top: 2px solid #cbd5e1;
 }
 
+.btn-edit {
+    background: #ecc94b;
+    color: #1a202c;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.btn-del {
+    background: #f56565;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+}
+
 h3 {
-    margin-top: 30px;
     margin-bottom: 15px;
     color: #0f172a;
     border-left: 4px solid #3182ce;
     padding-left: 10px;
     font-size: 18px;
 }
-
-/* ==========================================================================
-   6. Form Containers (Login, Add User, Insert, Edit Content)
-   ========================================================================== */
-.form-container {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    padding: 25px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 480px;
-    margin: 30px auto;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-
-.form-container h2 {
-    border-bottom: 1px solid #edf2f7;
-    padding-bottom: 12px;
-    margin-top: 0;
-    color: #1a202c;
-    font-size: 20px;
-}
-
-.form-container label {
-    display: block;
-    margin: 15px 0 5px;
-    color: #4a5568;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.form-container input, .form-container select, .form-container button {
-    width: 100%;
-    padding: 12px;
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
-    color: #333;
-    border-radius: 6px;
-    font-size: 15px;
-}
-
-.form-container button {
-    background: #3182ce;
-    color: #ffffff;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    margin-top: 25px;
-    transition: 0.2s;
-}
-
-.form-container button:hover {
-    background: #2b6cb0;
-}
-
-/* ==========================================================================
-   7. Structures & Topics Manage Sections
-   ========================================================================== */
-.section {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.section h3 {
-    margin-top: 0;
-    color: #0f172a;
-    border-bottom: 1px solid #edf2f7;
-    padding-bottom: 12px;
-    font-size: 18px;
-    border-left: none;
-    padding-left: 0;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-@media (min-width: 576px) {
-    .form-group {
-        flex-direction: row;
-    }
-    .form-group input, .form-group select {
-        flex: 1;
-    }
-    .form-group button {
-        width: auto;
-    }
-}
-
-ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-li {
-    background: #f8fafc;
-    padding: 12px 15px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid #e2e8f0;
-    font-size: 14px;
-    gap: 10px;
-}
-
-.badge-dept {
-    color: #3182ce;
-    font-weight: bold;
-    background: #ebf8ff;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-    border: 1px solid #bee3f8;
-}
-
-/* Message Status */
-.msg {
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    margin-bottom: 15px;
-    text-align: center;
-    font-weight: bold;
-}
-.success { background: #f0fff4; border: 1px solid #c6f6d5; color: #38a169; }
-.error { background: #fff5f5; border: 1px solid #fed7d7; color: #e53e3e; }
