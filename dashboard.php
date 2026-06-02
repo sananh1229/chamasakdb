@@ -78,7 +78,7 @@ $system_latest_update = "-";
 
     <div class="wrapper">
         <nav class="sidebar" id="sidebar">
-            <div class="sidebar-brand">ລະບົບຖານຂໍ້ມູນພະແນກ</div>
+            <div class="sidebar-brand">ລະບົບຖານຂໍ້ມູນສະຖິຕິຂອງແຂວງຈໍາປາສັກ</div>
             <ul class="sidebar-menu">
                 <li class="sidebar-item active"><a href="dashboard.php">ໜ້າຫຼັກ Dashboard</a></li>
                 <li class="sidebar-item"><a href="compare_report.php">ໜ້າສະຫຼຸບສົມທຽບ</a></li>
@@ -96,8 +96,8 @@ $system_latest_update = "-";
         <main class="main-content">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 10px;">
                 <div>
-                    <h2 style="margin: 0; border: none; padding: 0;">ລະບົບຖານຂໍ້ມູນສະຖິຕິພະແນກ</h2>
-                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">ສະແດງຜົນຕາຕະລາງລວມແຍກຕາມກຸ່ມວຽກ ແລະ ພะແນກ</p>
+                    <h2 style="margin: 0; border: none; padding: 0;">ລະບົບຖານຂໍ້ມູນສະຖິຕິຂອງແຂວງຈໍາປາສັກ</h2>
+                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">ສະແດງຜົນຕາຕະລາງລວມແຍກຕາມກຸ່ມວຽກ</p>
                 </div>
                 <a href="export_excel.php?year=<?php echo $selected_year; ?>&dept_id=<?php echo $search_dept; ?>&work_group=<?php echo urlencode($search_group); ?>" style="background: #48bb78; color: #fff; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">ສົ່ງອອກ Excel</a>
             </div>
@@ -116,7 +116,7 @@ $system_latest_update = "-";
 
                     <?php if($_SESSION['role'] == 'admin'): ?>
                         <select name="dept_id" class="select-control">
-                            <option value="">ທຸກພະແນກ</option>
+                            <option value="">ເບິ່ງຂໍ້ມູນລວມທັງໝົດ</option>
                             <?php
                             $depts = $conn->query("SELECT * FROM departments ORDER BY id ASC");
                             while($d = $depts->fetch_assoc()) {
@@ -146,7 +146,7 @@ $system_latest_update = "-";
                 <table>
                     <thead>
                         <tr>
-                            <th>ພະແນກ</th>
+                            <th>ນະຄອນ/ເມືອງ</th>
                             <th>ກຸ່ມວຽກ</th>
                             <th>ຫົວຂໍ້ກິດຈະກຳ</th>
                             <th style="text-align: right;">ຍອດລວມ</th>
@@ -182,7 +182,7 @@ $system_latest_update = "-";
                         <?php endif; ?>
                         
                         <tr style="background: #f1f5f9; font-weight: bold;">
-                            <td colspan="4" style="text-align: left; padding: 15px;">ສະແດງຜົນຂໍ້ມູນປະຈຳປີ <?php echo $selected_year; ?> (ຂໍ້ມູນປີອື່ນໆ ຈະບໍ່ນຳມາບວກປົນ)</td>
+                            <td colspan="4" style="text-align: left; padding: 15px;">ສະແດງຜົນຂໍ້ມູນປະຈຳປີ <?php echo $selected_year; ?></td>
                             <td colspan="3" style="text-align: right; padding: 15px; color: #2b6cb0;">
                                 ຂໍ້ມູນປີນີ້ອັບເດດຫຼ້າສຸດວັນທີ: <?php echo $system_latest_update; ?>
                             </td>

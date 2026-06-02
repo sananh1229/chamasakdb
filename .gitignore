@@ -1,0 +1,39 @@
+# OS files
+Thumbs.db
+ehthumbs.db
+.DS_Store
+
+# Node
+node_modules/
+
+# Composer
+/vendor
+/composer.lock
+
+# Environment files
+.env
+
+# PHPStorm / IDE
+.idea/
+.vscode/
+
+# Database backups
+*.sql
+*.sqlite
+
+# XAMPP specific
+xampp-control.ini
+
+# Uploaded files
+uploads/
+
+# Ignore log files
+*.log
+
+# Ignore compiled templates, cache
+cache/
+templates_c/
+
+# Ignore other
+*.zip
+*.tar.gz

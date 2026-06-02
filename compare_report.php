@@ -133,7 +133,7 @@ function getTopicMonthlyData($tid, $months, $conn, $currentYear) {
 
             <?php if($_SESSION['role'] == 'admin'): ?>
                 <select name="dept_id">
-                    <option value="">-- ເບິ່ງທຸກພະແນກ --</option>
+                    <option value="">-- ເບິ່ງທັງໝົດ --</option>
                     <?php
                     $depts = $conn->query("SELECT * FROM departments ORDER BY id ASC");
                     while($d = $depts->fetch_assoc()):

@@ -178,9 +178,9 @@ if ($topics_query && $topics_query->num_rows > 0) {
                     <?php echo $msg; ?>
                     
                     <form method="POST" action="insert_data.php">
-                        <label>ເລືອກພະແนກ (Select Department)</label>
+                        <label>ເລືອກນະຄອນ/ເມືອງ (Select Department)</label>
                         <select name="dept_id" id="department" onchange="filterTopics()" required>
-                            <option value="">-- ເມນູເລືອກພະແນກ --</option>
+                            <option value="">-- ເມນູເລືອກ --</option>
                             <?php 
                             if ($dept_query && $dept_query->num_rows > 0) {
                                 while($d = $dept_query->fetch_assoc()) {
@@ -192,7 +192,7 @@ if ($topics_query && $topics_query->num_rows > 0) {
 
                         <label>ເລືອກຫົວຂໍ້ / ກິດຈະກຳ (Select Topic)</label>
                         <select name="topic_id" id="topic" required>
-                            <option value="">-- ກະລຸນາເລືອກພະແກກ່ອນ --</option>
+                            <option value="">-- ກະລຸນາເລືອກນະຄອນ/ເມືອງກ່ອນ --</option>
                         </select>
 
                         <label>ຈຳນວນ / ຜົນຜະລິດ (Amount)</label>
