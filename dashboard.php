@@ -2,205 +2,138 @@
 include 'db.php';
 if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 
-$selected_year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
-$search_dept = isset($_GET['dept_id']) ? intval($_GET['dept_id']) : '';
-$search_group = isset($_GET['work_group']) ? $conn->real_escape_string(trim($_GET['work_group'])) : '';
+$user_role = $_SESSION['role'];
+$username = $_SESSION['username'];
 
-$user_dist_name = '';
-if ($_SESSION['role'] == 'user') {
-    $user_dist_id = intval($_SESSION['dept_id']);
-    $dept_query = $conn->query("SELECT name FROM districts WHERE id = $user_dist_id");
-    if ($dept_query && $dept_query->num_rows > 0) {
-        $user_dist_name = $dept_query->fetch_assoc()['name'];
-    }
-}
-
-$where_topic = [];
-if ($_SESSION['role'] == 'user') {
-    $where_topic[] = "t.district_id = " . $_SESSION['dept_id'];
-} elseif ($search_dept) {
-    $where_topic[] = "t.district_id = $search_dept";
-}
-
-if ($search_group !== '') {
-    $where_topic[] = "t.work_group = '$search_group'";
-}
-
-$where_clause = (count($where_topic) > 0) ? "WHERE " . implode(" AND ", $where_topic) : "";
-
-$topic_summary_query = "SELECT t.id as topic_id, t.title, t.work_group, d.name as dept_name, 
-                        SUM(CASE WHEN YEAR(r.record_date) = '$selected_year' THEN r.amount ELSE 0 END) as current_total,
-                        MAX(CASE WHEN YEAR(r.record_date) = '$selected_year' THEN r.created_at ELSE NULL END) as latest_update,
-                        (SELECT r2.unit FROM records r2 WHERE r2.topic_id = t.id ORDER BY r2.id DESC LIMIT 1) as latest_unit
-                        FROM topics t
-                        JOIN districts d ON t.district_id = d.id
-                        LEFT JOIN records r ON r.topic_id = t.id
-                        $where_clause
-                        GROUP BY t.id, t.title, t.work_group, d.name
-                        ORDER BY d.id ASC, t.id DESC";
-
-$summary_result = $conn->query($topic_summary_query);
-$system_latest_update = "-";
+// ดึงสถิติภาพรวมสั้นๆ มาโชว์ในหน้าแดชบอร์ดเพื่อให้เห็นข้อมูลแบบเรียบหรู ไม่เป็นตาราง Excel
+$count_districts = $conn->query("SELECT COUNT(*) as total FROM districts")->fetch_assoc()['total'];
+$count_topics = $conn->query("SELECT COUNT(*) as total FROM topics")->fetch_assoc()['total'];
+$count_records = $conn->query("SELECT COUNT(*) as total FROM records")->fetch_assoc()['total'];
 ?>
 <!DOCTYPE html>
 <html lang="lo">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ໜ້າຫຼັກ Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <title>ແຜງຄວບຄຸມລະບົບ (Dashboard)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Noto Sans Lao', sans-serif; }
-        body { background: #f8fafc; margin: 0; color: #334155; padding: 0; }
-        .wrapper { display: flex; min-height: 100vh; position: relative; }
-        .main-content { flex: 1; padding: 20px; background: #ffffff; width: 100%; overflow: hidden; }
-        .filter-box { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 25px; }
-        .filter-form { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
-        .select-control { flex: 1; min-width: 200px; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; height: 46px; background: #fff; color: #334155; }
-        .btn-search { background: #3182ce; color: #fff; border: none; font-weight: bold; cursor: pointer; height: 46px; padding: 0 25px; border-radius: 8px; font-size: 14px; }
-        .btn-clear { background: #64748b; color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 20px; border-radius: 8px; font-size: 14px; }
-        .table-container { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 900px; }
-        th, td { padding: 14px 16px; border-bottom: 1px solid #edf2f7; font-size: 14px; white-space: nowrap; }
-        th { background: #f1f5f9; color: #475569; font-weight: 700; }
-        .btn-edit { background: #ecc94b; color: #1a202c; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block; }
-        .btn-del { background: #f56565; color: #fff; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block; }
-        .user-dept-display { background: #ebf8ff; border: 1px solid #bee3f8; color: #2b6cb0; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 14px; }
-        @media (max-width: 768px) {
-            .wrapper { flex-direction: column; }
-            .filter-form { flex-direction: column; align-items: stretch; gap: 10px; }
-            .select-control { width: 100%; min-width: 100%; }
-            .btn-search, .btn-clear { width: 100%; text-align: center; justify-content: center; }
-            .header-section { flex-direction: column; align-items: stretch; gap: 15px; }
-            .header-section a { width: 100%; text-align: center; }
-        }
+        body { background: #f1f5f9; margin: 0; color: #1e293b; }
+        .wrapper { display: flex; min-height: 100vh; flex-direction: column; }
+        
+        /* Header Top Bar */
+        .top-bar { background: #ffffff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .brand-title { font-size: 20px; font-weight: 700; color: #2563eb; }
+        .user-profile { font-size: 14px; font-weight: 500; color: #475569; }
+        .btn-logout { background: #ef4444; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-left: 10px; }
+
+        /* Main Container */
+        .main-container { flex: 1; padding: 40px 20px; max-width: 1200px; width: 100%; margin: 0 auto; }
+        
+        .welcome-section { text-align: center; margin-bottom: 40px; }
+        .welcome-section h1 { font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 10px 0; }
+        .welcome-section p { font-size: 15px; color: #64748b; margin: 0; }
+
+        /* Quick Mini Stats Badges (ไม่ใช่ตาราง) */
+        .stats-strip { display: grid; grid-template-columns: repeat(1, 1fr); gap: 15px; margin-bottom: 40px; }
+        @media (min-width: 768px) { .stats-strip { grid-template-columns: repeat(3, 1fr); } }
+        .stat-mini-box { background: #ffffff; padding: 15px 20px; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .stat-mini-box span { font-size: 14px; font-weight: 500; color: #64748b; }
+        .stat-mini-box strong { font-size: 20px; font-weight: 700; color: #0f172a; }
+
+        /* 🌟 Menu Grid Layout (ศูนย์รวมเมนูทั้งหมดในหน้าแดชบอร์ด) */
+        .menu-dashboard-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 20px; }
+        @media (min-width: 768px) { .menu-dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .menu-dashboard-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        /* Card Menu Styling */
+        .menu-card { background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 30px 25px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; }
+        .menu-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        
+        .menu-title { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
+        .menu-desc { font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 25px; min-height: 42px; }
+        
+        /* ปุ่มกดของแต่ละเมนู แยกสีสันชัดเจนตามหมวดหมู่ */
+        .btn-menu-action { display: block; width: 100%; padding: 12px; text-decoration: none; color: #ffffff; font-weight: 700; font-size: 14px; border-radius: 8px; transition: opacity 0.2s; }
+        .btn-menu-action:hover { opacity: 0.9; }
+
+        /* สีสันประจำหมวดหมู่เมนู */
+        .color-blue { background: #2563eb; }
+        .color-teal { background: #0d9488; }
+        .color-orange { background: #ea580c; }
+        .color-purple { background: #7c3aed; }
+        .color-green { background: #16a34a; }
     </style>
 </head>
 <body>
-    <button class="menu-toggle" id="menuToggle">ເມນູ</button>
     <div class="wrapper">
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-brand">ລະບົບຖານຂໍ້ມູນສະຖິຕິ</div>
-            <ul class="sidebar-menu">
-                <li class="sidebar-item active"><a href="dashboard.php">ໜ້າຫຼັກ Dashboard</a></li>
-                <li class="sidebar-item"><a href="province_summary.php">ສະຫຼຸບຍອດລວມສະສົມ</a></li>
-                <li class="sidebar-item"><a href="compare_report.php">ໜ້າສະຫຼຸບສົມທຽບ</a></li>
-                <li class="sidebar-item"><a href="insert_data.php">ບັນທຶກຂໍ້ມູນໃໝ່</a></li>
-                <?php if($_SESSION['role'] == 'admin'): ?>
-                    <li class="sidebar-item"><a href="manage_structure.php">ຈັດການໂຄງສ້າງລະບົບ</a></li>
-                    <li class="sidebar-item"><a href="add_user.php">ເພີ່ມຜູ້ໃຊ້ງານໃໝ່</a></li>
-                <?php endif; ?>
-                <li class="sidebar-item" style="margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
-                    <a href="logout.php" style="background: #f56565; color: #fff; text-align: center;">ອອກຈາກລະບົບ</a>
-                </li>
-            </ul>
-        </nav>
+        <header class="top-bar">
+            <div class="brand-title">ລະບົບຖານຂໍ້ມູນສະຖິຕິ</div>
+            <div class="user-profile">
+                ສະບາຍດີ, <strong><?php echo htmlspecialchars($username); ?></strong> (<?php echo strtoupper($user_role); ?>)
+                <a href="logout.php" class="btn-logout">ອອກຈາກລະບົບ</a>
+            </div>
+        </header>
 
-        <main class="main-content">
-            <div class="header-section" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; margin-bottom: 25px; gap: 15px;">
-                <div>
-                    <h2 style="margin: 0; border: none; padding: 0; font-size: 22px; font-weight: 700;">ລະບົບຖານຂໍ້ມູນສະຖິຕິ</h2>
-                    <p style="color: #64748b; margin: 6px 0 0 0; font-size: 14px;">ສະແດງຜົນຕາຕະລางລວມແຍກຕາມກຸ່ມວຽກ ແລະ ນະຄອນ/ເມືອງ</p>
+        <main class="main-container">
+            <div class="welcome-section">
+                <h1>ແຜງຄວບຄຸມ ແລະ ເມນູລະບົບທັງໝົດ</h1>
+                <p>ຍິນດີຕ້ອນຮັບເຂົ້າສູ່ລະບົບຈັດການຂໍ້ມູນສະຖິຕິ ກະລຸນາເລືອກເມນູການເຮັດວຽກທີ່ທ່ານຕ້ອງການດ້ານລຸ່ມນີ້</p>
+            </div>
+
+            <div class="stats-strip">
+                <div class="stat-mini-box"><span>ພະແนກ/ເມືອງທັງໝົດ:</span> <strong><?php echo $count_districts; ?></strong></div>
+                <div class="stat-mini-box"><span>ຫົວຂໍ້ຕົວຊີ້ວັດທັງໝົດ:</span> <strong><?php echo $count_topics; ?></strong></div>
+                <div class="stat-mini-box"><span>ຈຳນວນຂໍ້ມູນທີ່ບັນທຶກ:</span> <strong><?php echo $count_records; ?></strong></div>
+            </div>
+
+            <div class="menu-dashboard-grid">
+                
+                <div class="menu-card">
+                    <div>
+                        <div class="menu-title">ສະຫຼຸບຍອດລວມສະສົມ</div>
+                        <div class="menu-desc">ເບິ່ງລາຍງານສະຫຼຸບຜົນຜະລິດ ແລະ ຍອດລວມສະສົມຕົວເລກສະຖິຕິແຍກຕາມລາຍປີຢ່າງຊັດເຈນ.</div>
+                    </div>
+                    <a href="province_summary.php" class="btn-menu-action color-blue">ເປີດໜ້າສະຫຼຸບຍອດລວມ</a>
                 </div>
-                <a href="export_excel.php?year=<?php echo $selected_year; ?>&dept_id=<?php echo $search_dept; ?>&work_group=<?php echo urlencode($search_group); ?>" style="background: #48bb78; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; text-align: center;">ສົ່ງອອກ Excel</a>
-            </div>
 
-            <?php if ($_SESSION['role'] == 'user' && !empty($user_dist_name)): ?>
-                <div class="user-dept-display">ນະຄອນ/ເມືອງຂອງທ່ານ: <?php echo htmlspecialchars($user_dist_name); ?></div>
-            <?php endif; ?>
+                <div class="menu-card">
+                    <div>
+                        <div class="menu-title">ລາຍງານສົມທຽບຂໍ້ມູນສະຖິຕິ</div>
+                        <div class="menu-desc">ສົມທຽບຜົນຜະລິດລະຫວ່າງ 1 ເດືອນ, 3 ເດືອນ, 6 ເດືອນ ແລະ 12 ເດືອນ ຂອງປີນີ້ກັບປີຜ່ານມາແບບມີສີສັນ.</div>
+                    </div>
+                    <a href="compare_report.php" class="btn-menu-action color-teal">ເປີດໜ້າສົມທຽບຂໍ້ມູນ</a>
+                </div>
 
-            <div class="filter-box">
-                <form method="GET" class="filter-form">
-                    <select name="year" class="select-control">
-                        <?php
-                        $current_y = intval(date('Y'));
-                        for($y = $current_y; $y >= $current_y - 5; $y--) {
-                            echo "<option value='$y' ".($selected_year == $y ? 'selected':'').">ເບິ່ງຂໍ້ມູນປີ $y</option>";
-                        }
-                        ?>
-                    </select>
+                <div class="menu-card">
+                    <div>
+                        <div class="menu-title">ບັນທຶກຂໍ້ມູນປະຈຳວັນ</div>
+                        <div class="menu-desc">ປ້ອນຕົວເລກຈຳນວນສະຖິຕິຜົນຜະລິດໃໝ່ເຂົ້າສູ່ລະບົບ ໂດຍຄັດກອງຕາມກຸ່ມວຽກງານ ແລະ ພະແນກສັງກັດ.</div>
+                    </div>
+                    <a href="insert_data.php" class="btn-menu-action color-orange">ເປີດໜ້າບັນທຶກຂໍ້ມູນໃໝ່</a>
+                </div>
 
-                    <?php if($_SESSION['role'] == 'admin'): ?>
-                        <select name="dept_id" class="select-control">
-                            <option value="">ທຸກນະຄອນ/ເມືອງ</option>
-                            <?php
-                            $depts = $conn->query("SELECT * FROM districts ORDER BY id ASC");
-                            while($d = $depts->fetch_assoc()) {
-                                echo "<option value='{$d['id']}' ".($search_dept == $d['id'] ? 'selected':'').">".htmlspecialchars($d['name'])."</option>";
-                            }
-                            ?>
-                        </select>
-                    <?php endif; ?>
+                <?php if ($user_role === 'admin'): ?>
+                    <div class="menu-card">
+                        <div>
+                            <div class="menu-title">ຈັດການໂຄງສ້າງລະບົບ</div>
+                            <div class="menu-desc">ເພີ່ມລາຍຊື່ພະແນກ, ສັງກັດ, ເມືອງ ແລະ ເພີ່ມຫົວຂໍ້ກິດຈະກຳຕົວຊີ້ວັດສະຖິຕິໃໝ່ເຂົ້າຖານຂໍ້ມູນ.</div>
+                        </div>
+                        <a href="manage_structure.php" class="btn-menu-action color-purple">ເປີດໜ້າຈັດການໂຄງສ້າງ</a>
+                    </div>
 
-                    <select name="work_group" class="select-control">
-                        <option value="">ທຸກກຸ່ມວຽກ</option>
-                        <option value="ກຸ່ມວຽກການເມືອງແנວຄິດ" <?php echo ($search_group == 'ກຸ່ມວຽກການເມືອງແנວຄິດ') ? 'selected':''; ?>>ກຸ່ມວຽກການເມືອງແນວຄິດ</option>
-                        <option value="ກຸ່ມວຽກ ປກซ-ປກສ" <?php echo ($search_group == 'ກຸ່ມວຽກ ປกຊ-%E0%BB%9B%E0%BB%80%E0%BB%AA') ? 'selected':''; ?>>ກຸ່ມວຽກ ປກຊ-ປກສ</option>
-                        <option value="ກຸ່ມວຽກເສດຖະກິດ" <?php echo ($search_group == 'ກຸ່ມວຽກເສດຖະກິດ') ? 'selected':''; ?>>ກຸ່ມວຽກເສດຖະກິດ</option>
-                        <option value="ກຸ່ມວຽກວັດທະນະທຳສັງຄົມ" <?php echo ($search_group == 'ກຸ່ມວຽກວັດທະນະທຳສັງຄົມ') ? 'selected':''; ?>>ກຸ່ມວຽກວັດທະນະທຳສັງຄົມ</option>
-                    </select>
+                    <div class="menu-card">
+                        <div>
+                            <div class="menu-title">ເພີ່ມຜູ້ໃຊ້ງານໃໝ່</div>
+                            <div class="menu-desc">ສ້າງບັນຊີຜູ້ໃຊ້ງານ ແລະ ກຳນົດສິດທິການເຂົ້າເຖິງຂໍ້ມູນ (Admin / User) ຂອງແຕ່ລະເມືອງ.</div>
+                        </div>
+                        <a href="add_user.php" class="btn-menu-action color-green">ເປີດໜ້າຈັດການຜູ້ໃຊ້ງານ</a>
+                    </div>
+                <?php endif; ?>
 
-                    <button type="submit" class="btn-search">ຄົ້ນຫາ</button>
-                    <?php if($search_dept !== '' || $search_group !== ''): ?>
-                        <a href="dashboard.php" class="btn-clear">ລ້າງຄ່າ</a>
-                    <?php endif; ?>
-                </form>
-            </div>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ນະຄອນ/ເມືອງ</th>
-                            <th>ກຸ່ມວຽກ</th>
-                            <th>ຫົວຂໍ້ກິດຈະກຳ</th>
-                            <th style="text-align: right;">ຍອດລວມ</th>
-                            <th style="text-align: center;">ຫົວໜ່ວຍ</th>
-                            <th>ອັບເດດລ່າສຸດ</th>
-                            <th style="text-align: center;">ຈັດການ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if($summary_result && $summary_result->num_rows > 0): ?>
-                            <?php while($ts = $summary_result->fetch_assoc()): 
-                                if(!empty($ts['latest_update']) && ($ts['latest_update'] > $system_latest_update || $system_latest_update == "-")) {
-                                    $system_latest_update = date('d-m-Y H:i:s', strtotime($ts['latest_update']));
-                                }
-                            ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($ts['dept_name']); ?></td>
-                                    <td><span style="color: #3182ce; font-weight: bold;"><?php echo htmlspecialchars($ts['work_group']); ?></span></td>
-                                    <td style="font-weight: 500; white-space: normal; min-width: 200px;"><?php echo htmlspecialchars($ts['title']); ?></td>
-                                    <td style="text-align: right; font-weight: bold; color: #2f855a;"><?php echo number_format($ts['current_total'], 2); ?></td>
-                                    <td style="text-align: center; font-weight: bold; color: #4a5568;"><?php echo htmlspecialchars($ts['latest_unit'] ?? 'ບໍ່ທັນລະບຸ'); ?></td>
-                                    <td style="color: #64748b; font-size: 13px;">
-                                        <?php echo !empty($ts['latest_update']) ? date('d-m-Y H:i:s', strtotime($ts['latest_update'])) : 'ບໍ່ມີຂໍ້ມູນໃນປີນີ້'; ?>
-                                    </td>
-                                    <td style="text-align: center;">
-                                        <a href="edit_record.php?topic_id=<?php echo $ts['topic_id']; ?>&year=<?php echo $selected_year; ?>" class="btn-edit">ແກ້ໄຂ</a>
-                                        <a href="delete_record.php?topic_id=<?php echo $ts['topic_id']; ?>" class="btn-del" onclick="return confirm('ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລົບຂໍ້ມູນທັງໝົດໃນຫົວຂໍ້ນີ້?')">ລົບ</a>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="7" style="text-align:center; color:#64748b;">ບໍ່ມີຂໍ້ມູນຫົວຂໍ້ກິດຈະກຳ</td></tr>
-                        <?php endif; ?>
-                        <tr style="background: #f1f5f9; font-weight: bold;">
-                            <td colspan="4" style="text-align: left; padding: 15px;">ສະແດງຜົນຂໍ້ມູນປະຈຳປີ <?php echo $selected_year; ?></td>
-                            <td colspan="3" style="text-align: right; padding: 15px; color: #2b6cb0;">ອັບເດดຫຼ້າສຸດວັນທີ: <?php echo $system_latest_update; ?></td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </main>
     </div>
-    <script>
-        document.getElementById('menuToggle').addEventListener('click', () => {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('open');
-            document.getElementById('menuToggle').innerText = sidebar.classList.contains('open') ? '✕ ປິດ' : '☰ ເມນູ';
-        });
-    </script>
 </body>
 </html>
