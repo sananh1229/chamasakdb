@@ -2,37 +2,51 @@
 include 'db.php';
 if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 
-$topic_id = isset($_GET['topic_id']) ? intval($_GET['topic_id']) : 0;
-// 🌟 ล็อกค่าปีที่ส่งต่อมาจากหน้าหลัก เพื่อควบคุมการบันทึกแยกปี
-$selected_year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
+// รับรหัสแถวข้อมูลสถิติที่แท้จริงเข้ามาทำการอัปเดตแก้ไข
+$record_id = isset($_GET['id']) ? intval($_GET['id']) : (isset($_GET['topic_id']) ? intval($_GET['topic_id']) : 0);
 $msg = '';
 
-$topic_query = $conn->query("SELECT title FROM topics WHERE id = $topic_id");
-$topic_data = $topic_query->fetch_assoc();
+// ตรวจสอบข้อมูลสถิติเดิมและชื่อหัวข้อกิจกรรมของรหัสนี้ขึ้นมาแสดงผลในฟอร์มแก้ไข
+$record_query = $conn->query("SELECT r.*, t.title, t.district_id FROM records r JOIN topics t ON r.topic_id = t.id WHERE r.id = $record_id");
 
-$record_query = $conn->query("SELECT SUM(amount) as total_amount, unit FROM records WHERE topic_id = $topic_id AND YEAR(record_date) = '$selected_year'");
-$record_data = $record_query->fetch_assoc();
-$current_amount = $record_data['total_amount'] ?? 0;
-$current_unit = $record_data['unit'] ?? 'ໂຕນ';
+if ($record_query && $record_query->num_rows > 0) {
+    $record_data = $record_query->fetch_assoc();
+    
+    // ตรวจสอบสิทธิ์ความปลอดภัย (สิทธิ์ผู้ใช้ปกติแก้ได้เฉพาะเมืองตัวเองเท่านั้น)
+    if ($_SESSION['role'] !== 'admin' && intval($record_data['district_id']) !== intval($_SESSION['dept_id'])) {
+        header("Location: insert_data.php");
+        exit();
+    }
+    
+    $current_amount = $record_data['amount'];
+    $current_unit = $record_data['unit'];
+    $current_date = $record_data['record_date'];
+    $topic_title = $record_data['title'];
+} else {
+    // ถ้าไม่พบรายการนี้ให้เด้งกลับทันที
+    header("Location: insert_data.php");
+    exit();
+}
 
+// เมื่อผู้ใช้กดปุ่มบันทึกแก้ไขข้อมูล
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_data'])) {
     $amount = floatval($_POST['amount']);
     $unit = trim($conn->real_escape_string($_POST['unit']));
+    $record_date = $conn->real_escape_string($_POST['record_date']);
 
-    if ($topic_id > 0) {
-        // 🌟 เคลียร์ข้อมูลเก่าเฉพาะปีที่กำลังแก้ไข เพื่อให้ค่าใหม่เป็นค่าล่าสุดจริงของปีนั้น ไม่สะสมปนกัน
-        $conn->query("DELETE FROM records WHERE topic_id = $topic_id AND YEAR(record_date) = '$selected_year'");
-        
-        $record_date = $selected_year . "-12-31"; // บันทึกลงวันสิ้นปีของปีนั้นๆ
-        $stmt = $conn->prepare("INSERT INTO records (topic_id, amount, unit, record_date, created_at) VALUES (?, ?, ?, ?, NOW())");
-        $stmt->bind_param("idss", $topic_id, $amount, $unit, $record_date);
+    if ($record_id > 0 && !empty($unit) && !empty($record_date)) {
+        // ดำเนินการอัปเดตแบบแม่นยำรายแถวข้อมูล (แก้ปัญหา Fatal Error ได้ถาวร 100%)
+        $stmt = $conn->prepare("UPDATE records SET amount = ?, unit = ?, record_date = ? WHERE id = ?");
+        $stmt->bind_param("sssi", $amount, $unit, $record_date, $record_id);
         
         if ($stmt->execute()) {
-            // บันทึกเสร็จ ส่งกลับหน้าแรกพร้อมรักษาค่าปีเดิมที่กำลังดูอยู่
-            header("Location: dashboard.php?year=" . $selected_year);
-            exit();
+            $msg = "<div class='msg success'>แก้ไขและอัปเดตข้อมูลสถิติสำเร็จแล้ว</div>";
+            // รีเฟรชตัวแปรปัจจุบันแสดงผลในหน้าเว็บ
+            $current_amount = $amount;
+            $current_unit = $unit;
+            $current_date = $record_date;
         } else {
-            $msg = "<div class='msg error'>❌ ເກີດຂໍ້ຜິດພາດໃນການແກ້ໄຂຂໍ້ມູນ.</div>";
+            $msg = "<div class='msg error'>เกิดข้อผิดพลาด ไม่สามารถแก้ไขข้อมูลได้</div>";
         }
     }
 }
@@ -42,37 +56,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_data'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ແກ້ໄຂຂໍ້ມູນປະຈຳປີ</title>
+    <title>แก้ไขข้อมูลสถิติ</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     <style>
-        .form-wrap-center { display: flex; justify-content: center; align-items: center; min-height: 80vh; width: 100%; }
-        .form-container-custom { background: #ffffff; border: 1px solid #e2e8f0; padding: 30px; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
-        .form-container-custom h2 { margin-bottom: 20px; color: #0f172a; font-size: 18px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; text-align: center; }
-        .form-container-custom label { display: block; margin-top: 14px; margin-bottom: 6px; color: #475569; font-size: 14px; font-weight: 600; }
-        .form-container-custom input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background-color: #f8fafc; }
-        .btn-submit-edit { width: 100%; padding: 14px; background-color: #ecc94b; color: #1a202c; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 25px; }
-        .btn-submit-edit:hover { background-color: #d69e2e; }
+        * { box-sizing: border-box; font-family: 'Noto Sans Lao', sans-serif; }
+        body { background: #f8fafc; margin: 0; padding: 20px; color: #334155; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .form-wrap-center { width: 100%; max-width: 550px; }
+        .form-container-custom { background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; font-size: 20px; font-weight: 700; text-align: center; color: #1e293b; }
+        label { display: block; margin: 15px 0 6px 0; font-weight: bold; font-size: 14px; color: #475569; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; height: 46px; font-size: 14px; background: #fff; color: #334155; }
+        input:focus { border-color: #3182ce; outline: none; }
+        .btn-submit-edit { width: 100%; padding: 12px; background: #3182ce; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 25px; height: 46px; }
+        .btn-submit-edit:hover { background: #2b6cb0; }
+        .btn-back { display: block; text-align: center; margin-top: 15px; color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; }
+        .msg { padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 14px; }
+        .success { background: #f0fff4; color: #2f855a; border: 1px solid #c6f6d5; }
+        .error { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
     </style>
 </head>
 <body>
     <div class="form-wrap-center">
         <div class="form-container-custom">
-            <h2>✏️ ແກ້ໄຂຂໍ້ມູນປີ <span style="color:#3182ce; font-weight:bold; text-decoration:underline;"><?php echo $selected_year; ?></span></h2>
-            <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:15px;">ຫົວຂໍ້: <strong><?php echo htmlspecialchars($topic_data['title'] ?? ''); ?></strong></p>
+            <h2>✏️ ແກ້ໄຂຂໍ້ມູນສະຖິຕິ</h2>
+            <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:20px;">
+                ຫົວຂໍ້: <strong style="color: #0f172a;"><?php echo htmlspecialchars($topic_title); ?></strong>
+            </p>
             
             <?php echo $msg; ?>
             
             <form method="POST">
-                <label>ປ້ອນຈຳນວນຜົນผลิตໃໝ່ (ຂຽນທັບຂໍ້ມູນເກົ່າຂອງປີນີ້)</label>
-                <input type="number" name="amount" step="any" value="<?php echo number_format($current_amount, 2, '.', ''); ?>" required>
+                <label>ຈຳນວນ / ຕົວເລກສະຖິຕິໃໝ່</label>
+                <input type="number" name="amount" step="any" value="<?php echo htmlspecialchars($current_amount); ?>" required>
 
-                <label>ຫົວໜ່ວຍວັດແທກ (Unit)</label>
+                <label>ຫົວໜ່ວຍວັດແທກ</label>
                 <input type="text" name="unit" value="<?php echo htmlspecialchars($current_unit); ?>" required>
+
+                <label>ວັນທີບັນທຶກຂໍ້ມູນ</label>
+                <input type="date" name="record_date" value="<?php echo htmlspecialchars($current_date); ?>" required>
 
                 <button type="submit" name="update_data" class="btn-submit-edit">💾 ບັນທຶກການແກ້ໄຂຂໍ້ມູນ</button>
             </form>
-            <center style="margin-top:20px;"><a href="dashboard.php?year=<?php echo $selected_year; ?>" class="btn-back">← ຍົກເລີກ ແລະ ກັບຄືນ</a></center>
+            
+            <a href="insert_data.php" class="btn-back">⬅️ ກັບຄືນໜ້າບັນທຶກຂໍ້ມູນ</a>
         </div>
     </div>
 </body>
